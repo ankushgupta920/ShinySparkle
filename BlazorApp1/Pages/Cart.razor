@@ -1,0 +1,171 @@
+﻿@page "/Cart"
+@using BlazorApp1.Service
+@using System.Globalization
+@inject CartService CartService
+@inject NavigationManager Navigation
+
+
+<div class="container py-5">
+    <h2 class="text-center fw-bold mb-4">🛒 Your Shopping Cart</h2>
+
+    @if (cartItems == null || !cartItems.Any())
+    {
+        Navigation.NavigateTo("/empty-cart");
+    }
+    else
+    {
+
+
+        <div class="row g-4">
+            @foreach (var item in cartItems)
+            {
+                <div class="col-md-12">
+                    <div class="card shadow-sm border-0 p-3" style="background-color: #1c1c1c; color: white;">
+                        <div class="row g-3 align-items-center flex-column flex-md-row text-center text-md-start">
+                            <div class="col-md-2">
+                                <img src="@item.MainImageUrl" alt="@item.Name"
+                                     class="img-fluid rounded shadow-sm mx-auto d-block" style="max-height: 100px; object-fit: contain;" />
+                            </div>
+                            <div class="col-md-4">
+                                <h5 class="fw-semibold mb-1" style="color: #FFD700;">@item.Name</h5>
+                                <p class="mb-0" style="color: white;">Price: <span class="fw-bold" style="color:#ccc">Rs. @item.Price.ToString("N2")</span></p>
+                            </div>
+                            <div class="col-md-2">
+                                
+                                <label class="form-label mb-1 fw-bold text-center text-md-start" style="color: white;">Quantity</label>
+                                <div class="d-flex justify-content-center justify-content-md-start align-items-center">
+                                    <button class="btn btn-outline-light btn-sm px-2 me-1" type="button" @onclick="() => UpdateQuantity(item.Id, item.Quantity - 1)" style="width: 30px; height: 30px; padding: 0;">−</button>
+                                    <input type="text" class="form-control form-control-sm text-center mx-1"
+                                           style="width: 50px; background-color: #1c1c1c; color: white; border: 1px solid #555;" value="@item.Quantity" readonly />
+                                    <button class="btn btn-outline-light btn-sm px-2 ms-1" type="button" @onclick="() => UpdateQuantity(item.Id, item.Quantity + 1)" style="width: 30px; height: 30px; padding: 0;">+</button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <p class="mb-1 fw-semibold" style="color: white;">Total</p>
+                                <h5 class="text-white">@("Rs. " + (item.Price * item.Quantity).ToString("N2", CultureInfo.CreateSpecificCulture("en-IN")))</h5>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn remove-from-cart-btn" @onclick="() => RemoveFromCart(item.Id)">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="card mt-5 p-4 shadow-sm border-0" style="background-color: #1c1c1c; color: white;">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <h4 class="mb-3 mb-md-0 fw-bold" style="color: white;">Total Amount: <span class="text-white">Rs. @cartTotal.ToString("N2")</span></h4>
+                <div class="d-flex gap-2">
+                    <button class="btn clear-cart-btn" @onclick="ClearCart">
+                        <i class="bi bi-cart-x me-1"></i> Clear Cart
+                    </button>
+
+                    <NavLink class="btn checkout-btn" href="/checkout">
+                        <i class="bi bi-credit-card me-1"></i> Checkout
+                    </NavLink>
+
+                </div>
+            </div>
+        </div>
+
+    }
+</div>
+
+@code {
+    private List<Modals.ProductVM> cartItems = new();
+    private decimal cartTotal = 0;
+
+    protected override void OnInitialized()
+    {
+        LoadCart();
+        CartService.OnCartUpdated += LoadCart;
+    }
+
+    private void LoadCart()
+    {
+        cartItems = CartService.GetCartItems();
+        cartTotal = cartItems.Sum(i => i.Price * i.Quantity);
+        StateHasChanged();
+    }
+
+    private async Task UpdateQuantity(int productId, int newQuantity)
+    {
+        if (newQuantity < 1)
+            return;
+
+        await CartService.UpdateQuantity(productId, newQuantity);
+        LoadCart();
+    }
+
+    private async Task RemoveFromCart(int productId)
+    {
+        await CartService.RemoveFromCart(productId);
+        LoadCart();
+    }
+
+    private async Task ClearCart()
+    {
+        await CartService.ClearCart();
+        LoadCart();
+    }
+}
+
+
+<style>
+    .remove-from-cart-btn {
+        background-color: transparent;
+        color: #ffffff;
+        border: 1px solid #ffffff;
+        padding: 6px 16px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 30px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+        .remove-from-cart-btn:hover {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+    .clear-cart-btn {
+        background-color: transparent;
+        color: #ffffff;
+        border: 1px solid #ffffff;
+        padding: 6px 16px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 30px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+        .clear-cart-btn:hover {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+    .checkout-btn {
+        background-color: transparent;
+        color: #ffffff;
+        border: 1px solid #ffffff;
+        padding: 6px 16px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 30px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+        .checkout-btn:hover {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+</style>

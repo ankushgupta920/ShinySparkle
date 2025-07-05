@@ -1,0 +1,60 @@
+﻿@page "/ProductList"
+@using Business.Repository.IRepository
+@using ShinySparkle_Server.Service
+@inject IJSRuntime JSRuntime
+@inject IFileUpload FileUpload
+@inject IProductListRepository ProductListRepository
+@inject NavigationManager NavigationManager
+
+<div class="row mt-4">
+    <div class="col-8">
+        <h4 class="card-title text-info">Hotel Room's</h4>
+    </div>
+    <div class="col-3 offset-1">
+        <NavLink href="hotel-room/create" class="btn btn-info form-control">Add New Room</NavLink>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Old Price</th>
+                    <th>Discount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (products.Any())
+                {
+                    @foreach (var product in products)
+                    {
+                        <tr>
+                            <td>@product.Name</td>
+                            <td>@product.Category</td>
+                            <td>@product.Price.ToString("c")</td>
+                            <td>@product.OldPrice.ToString("c")</td>
+                            <td>@($"{product.Discount}%")</td>
+                            <td>
+                                @* <NavLink href="@($"hotel-room/edit/{room.Id}")" class="btn btn-primary">Edit</NavLink> *@
+                                @* <button class="btn btn-danger" @onclick="()=>HandleDelete(room.Id)">Delete</button> *@
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5">No records found</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+                                

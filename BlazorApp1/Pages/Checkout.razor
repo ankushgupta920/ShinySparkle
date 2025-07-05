@@ -1,0 +1,99 @@
+﻿@page "/checkout"
+@using BlazorApp1.Modals
+@using BlazorApp1.Service
+@using System.Text
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject WhatsAppService WhatsAppService
+
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 mt-4 mt-md-0">
+            <div class="card shadow p-4" style="background-color: #1c1c1c; color: white;">
+                <h4 class="mb-3">🛍️ Order Summary</h4>
+
+                @foreach (var item in CartItems)
+                {
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="@item.MainImageUrl" class="rounded me-3"
+                             style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #555;" />
+                        <div>
+                            <p class="mb-0 fw-bold" style="color: #FFD700;">@item.Name</p>
+                            <small style="color: #ccc;">Qty: @item.Quantity | ₹@item.Price</small>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="fw-bold text-success">₹@(item.Price * item.Quantity)</span>
+                        </div>
+                    </div>
+                }
+
+                <hr style="border-color: #555;" />
+                <div class="d-flex justify-content-between fw-bold">
+                    <p style="color: white;">Total</p>
+                    <p class="text-success">₹@CartTotal</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow p-4" style="background-color: #1c1c1c; color: white;">
+                <h3 class="text-center mb-4">📝 Your Details</h3>
+
+                <!-- Name input with label and required -->
+                <label for="UserName" class="form-label text-white">Name</label>
+                <input id="UserName" class="form-control mb-2" @bind="UserName" required
+                       style="background-color: #1c1c1c; color: white; border: 1px solid #555; transition: border 0.3s ease-in-out;"
+                       onfocus="this.style.borderColor='#28a745'" onblur="this.style.borderColor='#555'" />
+
+                <!-- Phone number input with label and required -->
+                <label for="UserPhone" class="form-label text-white">Phone Number (without +91)</label>
+                <input id="UserPhone" class="form-control mb-2" @bind="UserPhone" required
+                       style="background-color: #1c1c1c; color: white; border: 1px solid #555; transition: border 0.3s ease-in-out;"
+                       onfocus="this.style.borderColor='#28a745'" onblur="this.style.borderColor='#555'" />
+
+                <!-- Address input with label and required -->
+                <label for="UserAddress" class="form-label text-white">Address</label>
+                <textarea id="UserAddress" class="form-control mb-3" @bind="UserAddress" required
+                          style="background-color: #1c1c1c; color: white; border: 1px solid #555; transition: border 0.3s ease-in-out;"
+                          onfocus="this.style.borderColor='#28a745'" onblur="this.style.borderColor='#555'"></textarea>
+
+                <!-- Submit button styled and icon added -->
+                <button class="btn btn-success w-100" @onclick="SendToWhatsApp">
+                    <i class="bi bi-whatsapp me-2"></i>Checkout via WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    private string UserName = "";
+    private string UserPhone = "";
+    private string UserAddress = "";
+
+    private List<ProductVM> CartItems = new();
+    private decimal CartTotal = 0;
+
+    protected override void OnInitialized()
+    {
+        LoadCart();
+    }
+
+    private void LoadCart()
+    {
+        CartItems = CartService.GetCartItems();
+        CartTotal = CartItems.Sum(item => item.Price * item.Quantity);
+    }
+
+
+    private async Task SendToWhatsApp()
+    {
+        var message =  WhatsAppService.GenerateOrderSummary(CartItems, CartTotal, UserPhone, UserName, UserAddress);
+        WhatsAppService.SendWhatsAppMessage(message);
+    }
+}

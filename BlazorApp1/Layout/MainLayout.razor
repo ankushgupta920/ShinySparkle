@@ -1,0 +1,42 @@
+﻿@using BlazorApp1.Modals
+@inherits LayoutComponentBase
+@inject NavigationManager NavManager
+<div style="background-color:black !important">
+<NavMenu />
+
+
+@if (!NavManager.Uri.Contains("/product/", StringComparison.OrdinalIgnoreCase)
+  && !NavManager.Uri.Contains("/category/", StringComparison.OrdinalIgnoreCase)
+  && !NavManager.Uri.Contains("/cart", StringComparison.OrdinalIgnoreCase)
+  && !NavManager.Uri.Contains("/empty-cart", StringComparison.OrdinalIgnoreCase)
+  && !NavManager.Uri.Contains("/checkout", StringComparison.OrdinalIgnoreCase)
+  && !NavManager.Uri.EndsWith("/login", StringComparison.OrdinalIgnoreCase))
+{
+    <AnnouncementBar />
+    <NavBanner />
+}
+
+
+@* <PopUp/> *@
+<WhatsApp/>
+    <div class="container" style="background-color:black !important">
+  
+    <div class="content">
+
+        @Body
+        
+    </div>
+   
+</div>
+
+<br />
+
+<Footer />
+</div>
+
+
+
+@code {
+}
+
+

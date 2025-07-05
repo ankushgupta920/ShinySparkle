@@ -1,0 +1,49 @@
+﻿@page "/"
+@using BlazorApp1.Service
+@using BlazorApp1.Service.IService
+@inject IProductService ProductService
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+
+<h2 class="text-center my-4" style="background-color:black; color:white">Our Products</h2>
+
+@if (products == null)
+{
+    <p class="text-center">Loading products...</p>
+}
+else if (!products.Any())
+{
+    <p class="text-center text-muted">No products available.</p>
+}
+else
+{
+    <div style="background-color: black;">
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+            @foreach (var product in products)
+            {
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm product-card"
+                         style="background-color: #2c2c2c; color: white;"
+                         @onclick="() => NavigateToProduct(product.Id)">
+                        <div class="position-relative">
+                            <img src="@product.MainImageUrl" alt="@product.Name" class="card-img-top" />
+                            <span class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 small rounded-start">
+                                -@product.Discount% OFF
+                            </span>
+                        </div>
+
+                        <div class="card-body text-center p-2">
+                            <h6 class="card-title fw-semibold" style="color:#FFD700">@product.Name</h6>
+                            <p class="mb-0" style="color:white">
+                                <span style="font-size: 0.9em; text-decoration: line-through; margin-right: 8px;">Rs. @product.OldPrice</span>
+                                <span class="fw-bold">Rs. @product.Price</span>
+                            </p>
+
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+

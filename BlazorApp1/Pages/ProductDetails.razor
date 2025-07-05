@@ -1,0 +1,274 @@
+﻿@page "/product/{Id:int}"
+@using BlazorApp1.Modals
+@using BlazorApp1.Service
+@using BlazorApp1.Service.IService
+@inject IProductService ProductService
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+@if (CurrentProduct == null)
+{
+    <p class="text-center mt-5">Loading product details...</p>
+}
+else
+{
+    <div class="container mt-4" >
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb bg-dark text-white p-2 rounded small">
+                <li class="breadcrumb-item">
+                    <a href="/" class="text-white text-decoration-none">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="/products" class="text-white text-decoration-none">Jewelry</a>
+                </li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">@CurrentProduct.Name</li>
+            </ol>
+        </nav>
+
+
+        <div class="row">
+            <!-- Left Column: Image Carousel with Thumbnails -->
+            <div class="col-lg-5 col-md-12">
+                <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner text-center">
+                        <div class="carousel-item active">
+                            <img src="@CurrentProduct.MainImageUrl" class="d-block mx-auto img-fluid rounded shadow-sm"
+                                 alt="@CurrentProduct.Name" style="max-width: 100%; max-height: 400px; object-fit: cover;color:white">
+                        </div>
+                        @if (CurrentProduct.AdditionalImages?.Count > 0)
+                        {
+                            @foreach (var img in CurrentProduct.AdditionalImages)
+                            {
+                                <div class="carousel-item">
+                                    <img src="@img" class="d-block mx-auto img-fluid rounded shadow-sm"
+                                         alt="@CurrentProduct.Name" style="max-width: 100%; max-height: 400px; object-fit: cover;">
+                                </div>
+                            }
+                        }
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+                </div>
+                <div class="d-flex mt-2 justify-content-center">
+                    <img src="@CurrentProduct.MainImageUrl" class="img-thumbnail me-1" width="60"
+                         style="cursor: pointer;" data-bs-target="#productCarousel" data-bs-slide-to="0">
+                    @if (CurrentProduct.AdditionalImages?.Count > 0)
+                    {
+                        @for (int i = 0; i < CurrentProduct.AdditionalImages.Count; i++)
+                        {
+                            <img src="@CurrentProduct.AdditionalImages[i]" class="img-thumbnail me-1" width="60"
+                                 style="cursor: pointer;" data-bs-target="#productCarousel" data-bs-slide-to="@(i+1)">
+                        }
+                    }
+                </div>
+            </div>
+            <!-- Right Column: Product Details -->
+            <div class="col-lg-7 col-md-12">
+                 
+                <h3 class="fw-bold" style="color:#FFD700">@CurrentProduct.Name</h3>
+
+                <div class="d-flex align-items-center mb-2">
+                    <h4 class="text-white fw-bold me-2">Rs. @CurrentProduct.Price</h4>
+                    @if (CurrentProduct.OldPrice > CurrentProduct.Price)
+                    {
+                        <h5 class="fw-semibold me-2" style="color: #ccc;"><s>Rs. @CurrentProduct.OldPrice</s></h5>
+                        <span class="badge bg-success ms-2 small">-@CurrentProduct.Discount% OFF</span>
+                    }
+                </div>
+
+                <div class="d-flex align-items-center mb-2">
+                    <label class="me-2 fw-semibold small">Qty</label>
+                    <input type="number" min="1" @bind="CurrentProduct.Quantity" class="form-control text-center"
+                           style="width: 60px; height: 30px;" readonly>&nbsp;&nbsp;
+                     <button class="btn add-to-cart-btn" style="padding: 6px 12px; font-size: 0.9rem;" @onclick="() => AddToCart(CurrentProduct)">
+                        <i class="bi bi-cart-plus"></i> Add to Cart
+                    </button>
+                </div>
+
+
+                <div class="mt-3">
+                    <h6 class="fw-bold text-white">Description</h6>
+                    <p class="small" style="color: white;">@((MarkupString)CurrentProduct.Description)</p>
+                </div>
+
+                <div class="accordion mt-3" id="productAccordion">
+                    <div class="accordion-item" style="background-color: #2c2c2c; color: white; border: none;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed small text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDispatch" style="background-color: #2c2c2c;">
+                                <i class="bi bi-truck me-1"></i> Dispatch & Delivery
+                            </button>
+                        </h2>
+                        <div id="collapseDispatch" class="accordion-collapse collapse">
+                            <div class="accordion-body small text-white" style="background-color: #2c2c2c;">Your dispatch and delivery details go here.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" style="background-color: #2c2c2c; color: white; border: none;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed small text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReturn" style="background-color: #2c2c2c;">
+                                <i class="bi bi-arrow-repeat me-1"></i> Return & Exchange
+                            </button>
+                        </h2>
+                        <div id="collapseReturn" class="accordion-collapse collapse">
+                            <div class="accordion-body small text-white" style="background-color: #2c2c2c;">You can return items within 7 days of delivery.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" style="background-color: #2c2c2c; color: white; border: none;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed small text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCare" style="background-color: #2c2c2c;">
+                                <i class="bi bi-heart me-1"></i> Care Guide
+                            </button>
+                        </h2>
+                        <div id="collapseCare" class="accordion-collapse collapse">
+                            <div class="accordion-body small text-white" style="background-color: #2c2c2c;">Store in a cool, dry place, avoid chemicals.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+@if (RelatedProducts?.Any() == true)
+{
+    <hr />
+    <div class="mt-4">
+        <h5 class="fw-bold text-white">Related Products</h5>
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+            @foreach (var product in RelatedProducts)
+            {
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm product-card"
+                         style="background-color: #2c2c2c; color: white;"
+                         @onclick="() => NavigateToProduct(product.Id)">
+                        <div class="position-relative">
+                            <img src="@product.MainImageUrl" alt="@product.Name" class="card-img-top" />
+                            <span class="position-absolute top-0 end-0 bg-danger text-white px-2 py-1 small rounded-start">
+                                -@product.Discount% OFF
+                            </span>
+                        </div>
+
+                        <div class="card-body text-center p-2">
+                            <h6 class="card-title fw-semibold">@product.Name</h6>
+                            @* <p class="mb-1"><s>Rs. @product.OldPrice</s></p> *@
+                            <p class="text-warning fw-bold mb-0">Rs. @product.Price</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+<style>
+    .add-to-cart-btn {
+        background-color: transparent;
+        color: #ffffff;
+        border: 1px solid #ffffff;
+        padding: 6px 16px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 30px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .add-to-cart-btn:hover {
+        background-color: #ffffff;
+        color: #000000;
+        border-color: #ffffff;
+    }
+
+@*     .carousel-inner img {
+        width: 100%;
+        height: 1000px;
+        object-fit: cover;
+    }
+
+    .img-thumbnail {
+        width: 60px;
+        height: 60px; /* force thumbnails to square */
+        object-fit: cover;
+        cursor: pointer;
+    } *@
+
+
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public ProductVM? CurrentProduct;
+    public List<ProductVM> RelatedProducts = new();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadProductData();
+    }
+
+    private async Task LoadProductData()
+    {
+        try
+        {
+            CurrentProduct = await ProductService.GetProductByIdAsync(Id);
+
+            if (CurrentProduct != null)
+            {
+                CurrentProduct.Quantity = CartService.GetQuantityInCart(CurrentProduct.Id);
+
+                var related = await ProductService.GetProductsByCategoryAsync(CurrentProduct.Category);
+
+                // Filter out current product from the related list
+                RelatedProducts = related
+                    .Where(p => p.Id != CurrentProduct.Id)
+                    .Take(4) // ✅ Show max 4 related products
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔴 Error fetching product: {ex.Message}");
+        }
+    }
+    private async Task AddToCart(ProductVM product)
+    {
+        await CartService.AddToCart(product);
+        // Now show a responsive SweetAlert2 popup
+        await JS.InvokeVoidAsync("Swal.fire", new
+        {
+            title = "Item Added!",
+            text = $"{CurrentProduct.Name} has been added to your cart.",
+            icon = "success",
+            timer = 1800,
+            showConfirmButton = false,
+            width = "90%",   // makes it mobile friendly
+            padding = "1.5rem",
+            backdrop = true,
+            position = "center",
+            customClass = new
+            {
+                popup = "responsive-swal-popup"
+            }
+        });
+    }
+
+    private void BuyNow()
+    {
+        Console.WriteLine("Proceeding to checkout...");
+    }
+    private void NavigateToProduct(int productId)
+    {
+        NavigationManager.NavigateTo($"/product/{productId}");
+    }
+
+}
+

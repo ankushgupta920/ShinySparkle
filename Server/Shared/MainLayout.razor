@@ -1,0 +1,36 @@
+﻿@using DataAcess
+@using Microsoft.AspNetCore.Identity
+@inherits LayoutComponentBase
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavManager
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <AuthorizeView>
+            <Authorized>
+                <p class="text-success">You are logged in as @context.User.Identity.Name</p>
+            </Authorized>
+            <NotAuthorized>
+                <p class="text-danger">You are NOT logged in.</p>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+    </main>
+</div>
+
+@code {
+    private async Task Logout()
+    {
+        await SignInManager.SignOutAsync();
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
+}
+

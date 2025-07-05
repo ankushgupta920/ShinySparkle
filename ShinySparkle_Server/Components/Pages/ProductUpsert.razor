@@ -1,0 +1,156 @@
+﻿@page "/Product/create"
+@using BlazorApp1.Modals
+@using Business.Repository.IRepository
+@using ShinySparkle_Server.Service
+@inject NavigationManager NavigationManager
+@inject IProductListRepository ProductListRepository
+@inject IFileUpload FileUpload
+
+<h3 class="card-title text-info mb-3">Create Product</h3>
+
+<div class="row mt-2 mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <EditForm Model="productVM" OnValidSubmit="HandleProductCreate" FormName="ProductCreateForm">
+                    <DataAnnotationsValidator />
+
+                    <!-- Product Name -->
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <InputText @bind-Value="productVM.Name" class="form-control"></InputText>
+                        <ValidationMessage For="()=>productVM.Name"></ValidationMessage>
+                    </div>
+
+                    <!-- Product Category -->
+                    <div class="form-group">
+                        <label>Category</label>
+                        <InputText @bind-Value="productVM.Category" class="form-control"></InputText>
+                        <ValidationMessage For="()=>productVM.Category"></ValidationMessage>
+                    </div>
+
+                    <!-- Price & Old Price -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Price</label>
+                                <InputNumber @bind-Value="productVM.Price" class="form-control"></InputNumber>
+                                <ValidationMessage For="()=>productVM.Price"></ValidationMessage>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Old Price</label>
+                                <InputNumber @bind-Value="productVM.OldPrice" class="form-control"></InputNumber>
+                                <ValidationMessage For="()=>productVM.OldPrice"></ValidationMessage>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Description -->
+                    <div class="form-group">
+                        <label>Description</label>
+                        <InputTextArea @bind-Value="productVM.Description" class="form-control"></InputTextArea>
+                        <ValidationMessage For="()=>productVM.Description"></ValidationMessage>
+                    </div>
+
+                    <!-- Product Images -->
+                    <div class="form-group">
+                        <label>Product Images</label>
+                        <InputFile OnChange="HandleImageUpload" multiple></InputFile>
+                        <ValidationMessage For="()=>productVM.ImageUrl"></ValidationMessage>
+
+                        <div class="row mt-2">
+                            @if (isImageUploadProcessStarted)
+                            {
+                                <div class="col-md-12">
+                                    <span><i class="fa fa-spin fa-spinner"></i> Uploading images...</span>
+                                </div>
+                            }
+                            @if (productVM.AdditionalImages?.Count > 0)
+                            {
+                                int serial = 1;
+                                foreach (var image in productVM.AdditionalImages)
+                                {
+                                    <div class="col-md-2 mt-3">
+                                        <div class="room-image" style="background:url('@image') center/cover; height: 100px;">
+                                            <span class="room-image-title">@serial</span>
+                                        </div>
+                                        <button @onclick="() => DeletePhoto(image)" type="button" class="btn btn-outline-danger btn-block mt-2">
+                                            Delete
+                                        </button>
+                                    </div>
+                                    serial++;
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Submit & Back Buttons -->
+                    <div class="form-group mt-3">
+                        <button type="submit" class="btn btn-primary">Create Product</button>
+                        <NavLink href="ProductList" class="btn btn-secondary">Back To List</NavLink>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ProductVM productVM { get; set; } = new ProductVM();
+    private bool isImageUploadProcessStarted { get; set; } = false;
+
+    private async Task HandleProductCreate()
+    {
+        try
+        {
+            await ProductListRepository.CreateProduct(productVM);
+            NavigationManager.NavigateTo("/ProductList");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        isImageUploadProcessStarted = true;
+        try
+        {
+            var images = new List<string>();
+            foreach (var file in e.GetMultipleFiles())
+            {
+                var uploadedImage = await FileUpload.UploadFile(file);
+                images.Add(uploadedImage);
+            }
+
+            if (images.Any())
+            {
+                productVM.AdditionalImages ??= new List<string>();
+                productVM.AdditionalImages.AddRange(images);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading image: {ex.Message}");
+        }
+        finally
+        {
+            isImageUploadProcessStarted = false;
+        }
+    }
+
+    private async Task DeletePhoto(string imageUrl)
+    {
+        try
+        {
+            productVM.AdditionalImages?.Remove(imageUrl);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting image: {ex.Message}");
+        }
+    }
+}

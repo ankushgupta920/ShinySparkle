@@ -1,0 +1,60 @@
+﻿@if (ShowPopup)
+{
+    <div class="modal-overlay">
+        <div class="popup-container">
+            <button class="close-btn" @onclick="ClosePopup">×</button>
+
+            <div class="popup-header">
+                <span class="emoji">⚠️</span>
+                <span class="title">ATTENTION</span>
+            </div>
+
+            <div class="popup-body">
+                <p class="status">🚧 WEBSITE UNDER WORK 🚧</p>
+                <p class="desc">Now Taking All Orders <strong>ON WhatsApp Only</strong></p>
+                <p class="details">
+                    To Check Full List of Perfumes<br />
+                    & Get the Maximum Discount<br />
+                    & <strong>10ml Perfume Free on Order</strong>
+                </p>
+                <p class="note">Click on the WhatsApp button below</p>
+                <a class="btn-whatsapp" href="https://wa.me/your-number" target="_blank">WhatsApp Now</a>
+            </div>
+        </div>
+    </div>
+}
+
+
+<link href="/css/stylepopup.css" rel="stylesheet" />
+
+
+
+
+@code {
+    private bool ShowPopup = true;
+    private Timer? popupTimer;
+
+    protected override void OnInitialized()
+    {
+        popupTimer = new Timer(ShowModal, null, 0, 60000); // every 30 seconds
+    }
+
+    private void ShowModal(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            ShowPopup = true;
+            StateHasChanged();
+        });
+    }
+
+    private void ClosePopup()
+    {
+        ShowPopup = false;
+    }
+
+    public void Dispose()
+    {
+        popupTimer?.Dispose();
+    }
+}

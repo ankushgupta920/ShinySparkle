@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "mssql1": {
+      "ignored": "true",
+      "type": "mssql",
+      "connectionId": "ConnectionStrings",
+      "dynamicId": null
+    },
+    "sqlite1": {
+      "ignored": "true",
+      "type": "sqlite"
+    }
+  }
+}

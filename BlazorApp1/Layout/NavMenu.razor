@@ -1,0 +1,103 @@
+﻿@using BlazorApp1.Service
+@inject CartService CartService
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-black shadow-sm sticky-top">
+    <div class="container d-flex align-items-center" style="background-color:black!important">
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Logo container -->
+        <div class="d-flex justify-content-center justify-content-lg-start flex-grow-1">
+            <img src="images/WhatsApp Image 2025-04-30 at 14.11.21_563b0bd7.jpg" alt="Company Logo" style="height: 80px;" />
+        </div>
+
+
+        <!-- 👇 ADD Cart & Search Icons Here 👇 -->
+        <div class="d-flex align-items-center order-lg-2 ms-auto">
+            <a href="#" class="me-3 icon-hover text-white"><i class="bi bi-search"></i></a>
+            <a href="/cart" class="position-relative icon-hover text-white">
+                <i class="bi bi-bag"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-dark">
+                    @CartItemCount
+                </span>
+            </a>
+        </div>
+
+        <div class="collapse navbar-collapse order-lg-1" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item"><a class="nav-link text-white" href="#">Home</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="collectionDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        Collection
+                    </a>
+                    <ul class="dropdown-menu animate-dropdown bg-dark">
+                        <li><a class="dropdown-item text-white" href="/category/Earings">Earings</a></li>
+                        <li><a class="dropdown-item text-white" href="/category/NeckSets">NeckSets</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Amarican Diamond</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Amarican Diamond</a></li>
+
+                        <li><a class="dropdown-item text-white" href="#">Rings</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Bangles- Braclets</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Quirky Edits</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Voguish</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Mangalsutra</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Belts & Ankles</a></li>
+
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="shopByShadeDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        Shop by Shade
+                    </a>
+                    <ul class="dropdown-menu animate-dropdown bg-dark">
+                        <li><a class="dropdown-item text-white" href="#">Yellow</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Purple</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Green</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Ivory</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Multi</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Red</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Blue</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Black</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Coral</a></li>
+                        <li><a class="dropdown-item text-white" href="#">Pink</a></li>
+
+                    </ul>
+                </li>
+
+@*               <li class="nav-item"><a class="nav-link text-white" href="#">Clutches & Bags</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">International Order</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Gift your Order</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="/Login">My Account</a></li> *@
+            </ul>
+
+        </div>
+
+    </div>
+</nav>
+
+
+@code {
+    private int CartItemCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load the cart count from service
+        CartItemCount = await CartService.GetCartCount();
+
+        // Subscribe to cart updates
+        CartService.OnCartUpdated += async () =>
+        {
+            CartItemCount = await CartService.GetCartCount();
+            StateHasChanged(); // Refresh UI
+        };
+    }
+}
+
+<link href="/css/navbar.css" rel="stylesheet" />
+

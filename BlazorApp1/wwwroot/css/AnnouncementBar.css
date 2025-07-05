@@ -1,0 +1,36 @@
+﻿.announcement-bar {
+    width: 100%;
+}
+
+.bar {
+    width: 100%;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: block;
+}
+
+.black-bar {
+    background-color: #333333;
+    color: white;
+}
+
+.maroon-bar {
+    background-color: #800040; /* Maroon shade */
+    color: white;
+}
+
+@media (min-width: 768px) {
+    .bar {
+        font-size: 1.2rem;
+        padding: 10px 20px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .bar {
+        font-size: 1.3rem;
+        padding: 12px 30px;
+    }
+}

@@ -125,3 +125,103 @@ public class CartController : ControllerBase
         return Ok();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public class CartService : ICartService
+{
+    private readonly ApplicationDbContext _context;
+
+    public CartService(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public void AddToCart(string userId, Product product)
+    {
+        // Get user's cart
+        var cart = _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefault(c => c.UserId == userId);
+
+        // If cart does not exist, create one
+        if (cart == null)
+        {
+            cart = new Cart
+            {
+                UserId = userId,
+                CartItems = new List<CartItem>()
+            };
+            _context.Carts.Add(cart);
+        }
+
+        // Check if product already exists
+        var item = cart.CartItems
+            .FirstOrDefault(x => x.ProductId == product.ProductId);
+
+        if (item == null)
+        {
+            cart.CartItems.Add(new CartItem
+            {
+                ProductId = product.ProductId,
+                Quantity = 1
+            });
+        }
+        else
+        {
+            item.Quantity++;
+        }
+
+        _context.SaveChanges();
+    }
+
+    public void RemoveFromCart(string userId, int productId)
+    {
+        var cart = _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefault(c => c.UserId == userId);
+
+        if (cart == null) return;
+
+        var item = cart.CartItems
+            .FirstOrDefault(x => x.ProductId == productId);
+
+        if (item != null)
+        {
+            cart.CartItems.Remove(item);
+            _context.SaveChanges();
+        }
+    }
+
+    public Cart GetCart(string userId)
+    {
+        return _context.Carts
+            .Include(c => c.CartItems)
+            .ThenInclude(ci => ci.Product)
+            .FirstOrDefault(c => c.UserId == userId);
+    }
+
+    public void ClearCart(string userId)
+    {
+        var cart = _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefault(c => c.UserId == userId);
+
+        if (cart == null) return;
+
+        _context.CartItems.RemoveRange(cart.CartItems);
+        _context.SaveChanges();
+    }
+}
+

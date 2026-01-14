@@ -1,144 +1,3 @@
-public interface ICartService
-{
-    void AddToCart(Product product);
-    void RemoveFromCart(int productId);
-    CartVM GetCart();
-    void ClearCart();
-}
-
-
-
-public class CartService : ICartService
-{
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private const string CartKey = "CART";
-
-    public CartService(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
-
-    public void AddToCart(Product product)
-    {
-        var cart = GetCart();
-
-        var item = cart.Items.FirstOrDefault(x => x.ProductId == product.ProductId);
-
-        if (item == null)
-        {
-            cart.Items.Add(new CartItemVM
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                Price = product.Price,
-                Quantity = 1
-            });
-        }
-        else
-        {
-            item.Quantity++;
-        }
-
-        SaveCart(cart);
-    }
-
-    public void RemoveFromCart(int productId)
-    {
-        var cart = GetCart();
-        cart.Items.RemoveAll(x => x.ProductId == productId);
-        SaveCart(cart);
-    }
-
-    public CartVM GetCart()
-    {
-        var session = _httpContextAccessor.HttpContext.Session;
-        var cartData = session.GetString(CartKey);
-
-        if (string.IsNullOrEmpty(cartData))
-            return new CartVM();
-
-        return JsonConvert.DeserializeObject<CartVM>(cartData);
-    }
-
-    public void ClearCart()
-    {
-        _httpContextAccessor.HttpContext.Session.Remove(CartKey);
-    }
-
-    private void SaveCart(CartVM cart)
-    {
-        _httpContextAccessor.HttpContext.Session.SetString(
-            CartKey,
-            JsonConvert.SerializeObject(cart)
-        );
-    }
-}
-
-
-
-
-
-
-[Authorize] // Identity
-[ApiController]
-[Route("api/cart")]
-public class CartController : ControllerBase
-{
-    private readonly ICartService _cartService;
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
-
-    public CartController(
-        ICartService cartService,
-        ApplicationDbContext context,
-        UserManager<IdentityUser> userManager)
-    {
-        _cartService = cartService;
-        _context = context;
-        _userManager = userManager;
-    }
-
-    [HttpPost("add")]
-    public IActionResult Add(int productId, int quantity)
-    {
-        if (quantity <= 0)
-            return BadRequest("Invalid quantity");
-
-        var product = _context.Products.Find(productId);
-        if (product == null)
-            return NotFound();
-
-        _cartService.AddToCart(product, quantity);
-        return Ok(_cartService.GetCart());
-    }
-
-    [HttpGet]
-    public IActionResult GetCart()
-    {
-        return Ok(_cartService.GetCart());
-    }
-
-    [HttpPost("remove")]
-    public IActionResult Remove(int productId)
-    {
-        _cartService.RemoveFromCart(productId);
-        return Ok();
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 public class CartService : ICartService
 {
     private readonly ApplicationDbContext _context;
@@ -148,34 +7,43 @@ public class CartService : ICartService
         _context = context;
     }
 
-    public void AddToCart(string userId, Product product)
+    // ADD TO CART
+    public void AddToCart(int productId, string userId)
     {
-        // Get user's cart
-        var cart = _context.Carts
-            .Include(c => c.CartItems)
-            .FirstOrDefault(c => c.UserId == userId);
+        // Get product
+        var product = _context.Products.Find(productId);
 
-        // If cart does not exist, create one
+        // Get existing cart
+        var cart = _context.Orders
+            .Include(x => x.OrderItems)
+            .FirstOrDefault(x => x.UserId == userId && !x.IsPlaced);
+
+        // If cart not exists → create
         if (cart == null)
         {
-            cart = new Cart
+            cart = new Order
             {
                 UserId = userId,
-                CartItems = new List<CartItem>()
+                CreatedDate = DateTime.Now,
+                IsPlaced = false,
+                OrderItems = new List<OrderItem>()
             };
-            _context.Carts.Add(cart);
+
+            _context.Orders.Add(cart);
+            _context.SaveChanges();
         }
 
-        // Check if product already exists
-        var item = cart.CartItems
-            .FirstOrDefault(x => x.ProductId == product.ProductId);
+        // Check item exists
+        var item = cart.OrderItems
+            .FirstOrDefault(x => x.ProductId == productId);
 
         if (item == null)
         {
-            cart.CartItems.Add(new CartItem
+            cart.OrderItems.Add(new OrderItem
             {
-                ProductId = product.ProductId,
-                Quantity = 1
+                ProductId = productId,
+                Quantity = 1,
+                Price = product.Price
             });
         }
         else
@@ -186,42 +54,31 @@ public class CartService : ICartService
         _context.SaveChanges();
     }
 
-    public void RemoveFromCart(string userId, int productId)
+    // REMOVE FROM CART
+    public void RemoveFromCart(int productId, string userId)
     {
-        var cart = _context.Carts
-            .Include(c => c.CartItems)
-            .FirstOrDefault(c => c.UserId == userId);
+        var cart = _context.Orders
+            .Include(x => x.OrderItems)
+            .FirstOrDefault(x => x.UserId == userId && !x.IsPlaced);
 
         if (cart == null) return;
 
-        var item = cart.CartItems
+        var item = cart.OrderItems
             .FirstOrDefault(x => x.ProductId == productId);
 
         if (item != null)
         {
-            cart.CartItems.Remove(item);
+            _context.OrderItems.Remove(item);
             _context.SaveChanges();
         }
     }
 
-    public Cart GetCart(string userId)
+    // GET CART
+    public Order GetCart(string userId)
     {
-        return _context.Carts
-            .Include(c => c.CartItems)
-            .ThenInclude(ci => ci.Product)
-            .FirstOrDefault(c => c.UserId == userId);
-    }
-
-    public void ClearCart(string userId)
-    {
-        var cart = _context.Carts
-            .Include(c => c.CartItems)
-            .FirstOrDefault(c => c.UserId == userId);
-
-        if (cart == null) return;
-
-        _context.CartItems.RemoveRange(cart.CartItems);
-        _context.SaveChanges();
+        return _context.Orders
+            .Include(x => x.OrderItems)
+            .ThenInclude(x => x.Product)
+            .FirstOrDefault(x => x.UserId == userId && !x.IsPlaced);
     }
 }
-

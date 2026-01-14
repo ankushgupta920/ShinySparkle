@@ -82,3 +82,99 @@ public class CartService : ICartService
             .FirstOrDefault(x => x.UserId == userId && !x.IsPlaced);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+public async Task<IActionResult> Login(LoginVM model)
+{
+    var token = await _authService.LoginAsync(model);
+
+    var handler = new JwtSecurityTokenHandler();
+    var jwt = handler.ReadJwtToken(token);
+    var claims = jwt.Claims.ToList();
+
+    var identity = new ClaimsIdentity(
+        claims,
+        CookieAuthenticationDefaults.AuthenticationScheme
+    );
+
+    var principal = new ClaimsPrincipal(identity);
+
+    await HttpContext.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal
+    );
+
+    // 🔥 STORE JWT TOKEN (THIS WAS MISSING)
+    Response.Cookies.Append("jwt_token", token, new CookieOptions
+    {
+        HttpOnly = true,
+        Secure = true,
+        SameSite = SameSiteMode.Strict
+    });
+
+    return RedirectToAction("Index", "Home");
+}
+
+public class ProductService : IProductService
+{
+    private readonly HttpClient client;
+    private readonly IHttpContextAccessor _context;
+
+    public ProductService(HttpClient client, IHttpContextAccessor context)
+    {
+        this.client = client;
+        _context = context;
+    }
+
+    private void AddJwtHeader()
+    {
+        var token = _context.HttpContext?.Request.Cookies["jwt_token"];
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+
+    public async Task<ProductVM> CreateProductAsync(ProductVM productVM)
+    {
+        AddJwtHeader(); // 🔥 IMPORTANT
+
+        var json = JsonConvert.SerializeObject(productVM);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("api/ProductAPI", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var data = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<ProductVM>(data);
+        }
+        return null;
+    }
+
+    public async Task<bool> DeleteProductAsync(int id)
+    {
+        AddJwtHeader(); // 🔥 IMPORTANT
+
+        var response = await client.DeleteAsync($"api/ProductAPI/{id}");
+        return response.IsSuccessStatusCode;
+    }
+}
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddHttpClient<IProductService, ProductService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:5001/");
+});

@@ -1,0 +1,127 @@
+public interface ICartService
+{
+    void AddToCart(Product product);
+    void RemoveFromCart(int productId);
+    CartVM GetCart();
+    void ClearCart();
+}
+
+
+
+public class CartService : ICartService
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private const string CartKey = "CART";
+
+    public CartService(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public void AddToCart(Product product)
+    {
+        var cart = GetCart();
+
+        var item = cart.Items.FirstOrDefault(x => x.ProductId == product.ProductId);
+
+        if (item == null)
+        {
+            cart.Items.Add(new CartItemVM
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                Price = product.Price,
+                Quantity = 1
+            });
+        }
+        else
+        {
+            item.Quantity++;
+        }
+
+        SaveCart(cart);
+    }
+
+    public void RemoveFromCart(int productId)
+    {
+        var cart = GetCart();
+        cart.Items.RemoveAll(x => x.ProductId == productId);
+        SaveCart(cart);
+    }
+
+    public CartVM GetCart()
+    {
+        var session = _httpContextAccessor.HttpContext.Session;
+        var cartData = session.GetString(CartKey);
+
+        if (string.IsNullOrEmpty(cartData))
+            return new CartVM();
+
+        return JsonConvert.DeserializeObject<CartVM>(cartData);
+    }
+
+    public void ClearCart()
+    {
+        _httpContextAccessor.HttpContext.Session.Remove(CartKey);
+    }
+
+    private void SaveCart(CartVM cart)
+    {
+        _httpContextAccessor.HttpContext.Session.SetString(
+            CartKey,
+            JsonConvert.SerializeObject(cart)
+        );
+    }
+}
+
+
+
+
+
+
+[Authorize] // Identity
+[ApiController]
+[Route("api/cart")]
+public class CartController : ControllerBase
+{
+    private readonly ICartService _cartService;
+    private readonly ApplicationDbContext _context;
+    private readonly UserManager<IdentityUser> _userManager;
+
+    public CartController(
+        ICartService cartService,
+        ApplicationDbContext context,
+        UserManager<IdentityUser> userManager)
+    {
+        _cartService = cartService;
+        _context = context;
+        _userManager = userManager;
+    }
+
+    [HttpPost("add")]
+    public IActionResult Add(int productId, int quantity)
+    {
+        if (quantity <= 0)
+            return BadRequest("Invalid quantity");
+
+        var product = _context.Products.Find(productId);
+        if (product == null)
+            return NotFound();
+
+        _cartService.AddToCart(product, quantity);
+        return Ok(_cartService.GetCart());
+    }
+
+    [HttpGet]
+    public IActionResult GetCart()
+    {
+        return Ok(_cartService.GetCart());
+    }
+
+    [HttpPost("remove")]
+    public IActionResult Remove(int productId)
+    {
+        _cartService.RemoveFromCart(productId);
+        return Ok();
+    }
+}
